@@ -42,6 +42,7 @@ import (
 var port = 8080
 
 var authCount = 0
+var countEndpoint = 0
 
 const (
 	EnvPORT        = "PORT"
@@ -290,6 +291,21 @@ func RegisterConsul(quotePort int) {
 	return
 }
 
+// Endpoint that counts the number of times you have made a request to it since the last restart
+func (s *Server) Counter(w http.ResponseWriter, r *http.Request) {
+	
+	countEndpoint++
+
+	w.Header().Set("Content-Type", "text/html; text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+
+	countMsg := fmt.Sprintf("%d%s", countEndpoint, " requests have been made to this endpoint since the last restart.")
+
+	if _, err := w.Write([]byte(countMsg)); err != nil {
+		log.Panicln(err)
+	}
+}
+
 
 func (s *Server) GetRPS() int {
 	n := time.Now()
@@ -514,6 +530,7 @@ func (s *Server) ConfigureRouter() {
 	s.router.Get("/logout", s.Logout)
 	s.router.Get("/health", s.HealthCheck)
 	s.router.HandleFunc("/ws", s.StreamQuotes)
+	s.router.Get("/count/", s.Counter)
 
 	s.router.Get(getEnv(EnvOpenAPIPath, "/.ambassador-internal/openapi-docs"), s.GetOpenAPIDocument)
 }
